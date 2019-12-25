@@ -3,10 +3,11 @@ import { promisify } from 'util'
 import { join, relative } from 'path'
 import Listr, { ListrTask } from 'listr'
 import { S3 } from 'aws-sdk'
-import { createReadStream, lstatSync } from 'fs'
+import { createReadStream, lstatSync, statSync } from 'fs'
 import mime from 'mime-types'
 
 import keyBy from 'lodash.keyby'
+import { calcMd5FromStream } from './utils/md5'
 
 const globAsync = promisify(glob)
 
@@ -19,6 +20,7 @@ type FileDef = { name: string; key: string }
 const uploadFile = async (s3: S3, file: FileDef, params: DeployArgsParams) => {
   const body = createReadStream(file.name)
   const contentType = mime.contentType(file.name) || undefined
+
   const upload = new S3.ManagedUpload({
     params: {
       Key: file.key,
@@ -52,12 +54,14 @@ const deleteRemovedObjects = async (
       }
     })
 
-    await s3
-      .deleteObjects({
-        Bucket: bucket,
-        Delete: { Objects: deleteTargets }
-      })
-      .promise()
+    if (deleteTargets.length > 0) {
+      await s3
+        .deleteObjects({
+          Bucket: bucket,
+          Delete: { Objects: deleteTargets }
+        })
+        .promise()
+    }
   }
 
   if (r.IsTruncated) {
@@ -93,14 +97,16 @@ export const deployTask = async ({
   }
   const cwd = process.cwd()
 
-  const s3 = new S3(config)
+  const s3 = new S3({ ...config, computeChecksums: true })
   const bucket = params.Bucket
   const filenames = await globAsync(pattern)
   const files = filenames
     .filter(file => lstatSync(file).isFile())
     .map(file => ({
       name: file,
-      key: resolveObjectKey(cwd, base, file)
+      key: resolveObjectKey(cwd, base, file),
+      md5: calcMd5FromStream(file),
+      size: lstatSync(file).size
     }))
   const tasks: ListrTask<any>[] = files.map(
     (file): ListrTask<any> => {
@@ -108,8 +114,13 @@ export const deployTask = async ({
         title: `Upload ${file.key}`,
         skip: async () => {
           try {
-            await s3.headObject({ Key: file.key, Bucket: bucket }).promise()
-            return true
+            const r = await s3
+              .headObject({ Key: file.key, Bucket: bucket })
+              .promise()
+            if (r.ETag === `"${file.md5}"`) return true
+            // Large file can not be compare ETag. So compare file size.
+            if (r.ContentLength === file.size) return true
+            return false
           } catch {
             return false
           }

@@ -19,8 +19,9 @@ export const deployAndInvalidate = async (
   const d = await deployTask(deployArgs)
   const i = invalidateTask(invalidateArgs)
 
-  return new Listr([
+  const tasks = new Listr([
     { title: 'Deploy to S3', task: () => d },
     { title: 'Invalidate CloudFront', task: () => i }
   ])
+  await tasks.run()
 }
