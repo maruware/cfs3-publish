@@ -48,6 +48,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.596.0",
+    "delay": "^4.3.0",
     "glob": "^7.1.6",
     "listr": "^0.14.3",
     "mime-types": "^2.1.25"

@@ -12,17 +12,19 @@ const resolveObjectKey = (cwd: string, base: string, filename: string) => {
   return relative(join(cwd, base), filename)
 }
 
-export const deployS3 = async ({
-  pattern,
-  config,
-  params,
-  ...rest
-}: {
+export type DeployArgs = {
   pattern: string
   base?: string
   config?: S3.ClientConfiguration
   params: Omit<S3.PutObjectRequest, 'Key' | 'Body'>
-}) => {
+}
+
+export const deployTask = async ({
+  pattern,
+  config,
+  params,
+  ...rest
+}: DeployArgs) => {
   let base: string = ''
   if (rest.base) {
     base = rest.base
@@ -68,5 +70,5 @@ export const deployS3 = async ({
       }
     }
   )
-  return new Listr(tasks)
+  return new Listr(tasks, { concurrent: true })
 }
