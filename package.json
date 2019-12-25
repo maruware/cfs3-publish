@@ -1,0 +1,28 @@
+{
+  "name": "cfs3-deploy",
+  "version": "0.0.1",
+  "description": "Deploy Tool for CloudFront + S3 with npm scripts.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/maruware/cfs3-deploy.git"
+  },
+  "keywords": [
+    "CloudFront",
+    "S3"
+  ],
+  "author": "maruware",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/maruware/cfs3-deploy/issues"
+  },
+  "homepage": "https://github.com/maruware/cfs3-deploy#readme",
+  "devDependencies": {
+    "@types/node": "^13.1.0",
+    "typescript": "^3.7.4"
+  }
+}
