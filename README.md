@@ -19,7 +19,7 @@ yarn add -D cfs3-publish
 
 ## Usage
 
-* S3 and CloudFront
+* S3 and CloudFront (using ENV)
 
 ```js
 const { deployAndInvalidate } = require('cfs3-publish')
@@ -34,6 +34,35 @@ deployAndInvalidate(
   },
   {
     distributionId,
+    paths: ['/*'],
+    wait: true
+  }
+)
+```
+
+* S3 and CloudFront (setting Access Key)
+
+```js
+const { deployAndInvalidate } = require('cfs3-publish')
+// or import { deployAndInvalidate } from 'cfs3-publish' /* TypeScript */
+
+deployAndInvalidate(
+  {
+    pattern: 'dist/**',
+    config: {
+      accessKeyId: 'YOUR_KEY',
+      secretAccessKey: 'YOUR_SECRET'
+    },
+    params: {
+      Bucket: bucket
+    }
+  },
+  {
+    distributionId,
+    config: {
+      accessKeyId: 'YOUR_KEY',
+      secretAccessKey: 'YOUR_SECRET'
+    },
     paths: ['/*'],
     wait: true
   }
