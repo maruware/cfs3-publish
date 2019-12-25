@@ -107,3 +107,6 @@ dist
 .vscode-test
 
 .envrc
+
+tmp/*
+!tmp/.keep
