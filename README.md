@@ -29,7 +29,8 @@ deployAndInvalidate(
   {
     pattern: 'dist/**',
     params: {
-      Bucket: bucket
+      Bucket: bucket,
+      'Cache-Control': 'max-age=300, no-transform, public'
     }
   },
   {
