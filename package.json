@@ -1,6 +1,6 @@
 {
   "name": "cfs3-publish",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Deploy and Invalidation Tool for CloudFront + S3 with npm scripts.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
