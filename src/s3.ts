@@ -12,6 +12,29 @@ const resolveObjectKey = (cwd: string, base: string, filename: string) => {
   return relative(join(cwd, base), filename)
 }
 
+const uploadFile = async (
+  s3: S3,
+  file: string,
+  key: string,
+  params: DeployArgsParams
+) => {
+  const body = createReadStream(file)
+  const contentType = mime.contentType(file) || undefined
+  const upload = new S3.ManagedUpload({
+    params: {
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ...params
+    },
+    service: s3
+  })
+  upload.send()
+  return upload.promise()
+}
+
+export type DeployArgsParams = Omit<S3.PutObjectRequest, 'Key' | 'Body'>
+
 export type DeployArgs = {
   pattern: string
   base?: string
@@ -54,18 +77,7 @@ export const deployTask = async ({
           }
         },
         task: async () => {
-          const body = createReadStream(file)
-          const contentType = mime.contentType(file) || undefined
-          const upload = new S3.ManagedUpload({
-            params: {
-              Key: key,
-              Body: body,
-              ContentType: contentType,
-              ...params
-            }
-          })
-          upload.send()
-          return upload.promise()
+          return uploadFile(s3, file, key, params)
         }
       }
     }
