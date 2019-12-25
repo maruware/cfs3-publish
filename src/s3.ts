@@ -6,23 +6,22 @@ import { S3 } from 'aws-sdk'
 import { createReadStream, lstatSync } from 'fs'
 import mime from 'mime-types'
 
+import keyBy from 'lodash.keyby'
+
 const globAsync = promisify(glob)
 
 const resolveObjectKey = (cwd: string, base: string, filename: string) => {
   return relative(join(cwd, base), filename)
 }
 
-const uploadFile = async (
-  s3: S3,
-  file: string,
-  key: string,
-  params: DeployArgsParams
-) => {
-  const body = createReadStream(file)
-  const contentType = mime.contentType(file) || undefined
+type FileDef = { name: string; key: string }
+
+const uploadFile = async (s3: S3, file: FileDef, params: DeployArgsParams) => {
+  const body = createReadStream(file.name)
+  const contentType = mime.contentType(file.name) || undefined
   const upload = new S3.ManagedUpload({
     params: {
-      Key: key,
+      Key: file.key,
       Body: body,
       ContentType: contentType,
       ...params
@@ -33,6 +32,39 @@ const uploadFile = async (
   return upload.promise()
 }
 
+const deleteRemovedObjects = async (
+  s3: S3,
+  bucket: string,
+  files: FileDef[],
+  continuationToken?: string
+): Promise<void> => {
+  const keyToFile = keyBy(files, 'key')
+  const r = await s3
+    .listObjectsV2({ Bucket: bucket, ContinuationToken: continuationToken })
+    .promise()
+  if (r.Contents && r.Contents.length > 0) {
+    const deleteTargets: { Key: string }[] = []
+    r.Contents.forEach(content => {
+      const key = content.Key
+      if (key && !keyToFile[key]) {
+        // removed object
+        deleteTargets.push({ Key: key })
+      }
+    })
+
+    await s3
+      .deleteObjects({
+        Bucket: bucket,
+        Delete: { Objects: deleteTargets }
+      })
+      .promise()
+  }
+
+  if (r.IsTruncated) {
+    return deleteRemovedObjects(s3, bucket, files, r.NextContinuationToken)
+  }
+}
+
 export type DeployArgsParams = Omit<S3.PutObjectRequest, 'Key' | 'Body'>
 
 export type DeployArgs = {
@@ -40,12 +72,14 @@ export type DeployArgs = {
   base?: string
   config?: S3.ClientConfiguration
   params: Omit<S3.PutObjectRequest, 'Key' | 'Body'>
+  deleteRemoved?: boolean
 }
 
 export const deployTask = async ({
   pattern,
   config,
   params,
+  deleteRemoved = true,
   ...rest
 }: DeployArgs) => {
   let base: string = ''
@@ -61,26 +95,39 @@ export const deployTask = async ({
 
   const s3 = new S3(config)
   const bucket = params.Bucket
-  let files = await globAsync(pattern)
-  files = files.filter(file => lstatSync(file).isFile())
+  const filenames = await globAsync(pattern)
+  const files = filenames
+    .filter(file => lstatSync(file).isFile())
+    .map(file => ({
+      name: file,
+      key: resolveObjectKey(cwd, base, file)
+    }))
   const tasks: ListrTask<any>[] = files.map(
     (file): ListrTask<any> => {
-      const key = resolveObjectKey(cwd, base, file)
       return {
-        title: `Upload ${key}`,
+        title: `Upload ${file.key}`,
         skip: async () => {
           try {
-            await s3.headObject({ Key: key, Bucket: bucket }).promise()
+            await s3.headObject({ Key: file.key, Bucket: bucket }).promise()
             return true
           } catch {
             return false
           }
         },
         task: async () => {
-          return uploadFile(s3, file, key, params)
+          return uploadFile(s3, file, params)
         }
       }
     }
   )
+
+  if (deleteRemoved) {
+    tasks.push({
+      title: 'Delete removed files',
+      task: () => {
+        return deleteRemovedObjects(s3, bucket, files)
+      }
+    })
+  }
   return new Listr(tasks, { concurrent: true })
 }
