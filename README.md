@@ -1,16 +1,16 @@
 # cfs3-deploy
-Deploy Tool for CloudFront + S3 with npm scripts.
+Deploy and Invalidation Tool for CloudFront + S3 with npm scripts.
 
 ## Install
 
 ```
-npm install -D cfs3-deploy
+npm install -D cfs3-publish
 ```
 
 or
 
 ```
-yarn add -D cfs3-deploy
+yarn add -D cfs3-publish
 ```
 
 ## Usage
@@ -18,8 +18,8 @@ yarn add -D cfs3-deploy
 * S3 and CloudFront
 
 ```js
-const { deployAndInvalidate } = require('cfs3-deploy')
-// or import { deployAndInvalidate } from 'cfs3-deploy' /* TypeScript */
+const { deployAndInvalidate } = require('cfs3-publish')
+// or import { deployAndInvalidate } from 'cfs3-publish' /* TypeScript */
 
 deployAndInvalidate(
   {
@@ -39,7 +39,7 @@ deployAndInvalidate(
 * S3
 
 ```js
-const { deploy } = require('cfs3-deploy')
+const { deploy } = require('cfs3-publish')
 
 deploy(
   {
@@ -54,7 +54,7 @@ deploy(
 * CloudFront
 
 ```js
-const { invalidate } = require('cfs3-deploy')
+const { invalidate } = require('cfs3-publish')
 
 invalidate(
   {

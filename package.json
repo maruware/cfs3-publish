@@ -1,8 +1,12 @@
 {
-  "name": "cfs3-deploy",
+  "name": "cfs3-publish",
   "version": "0.0.1",
-  "description": "Deploy Tool for CloudFront + S3 with npm scripts.",
+  "description": "Deploy and Invalidation Tool for CloudFront + S3 with npm scripts.",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npm-run-all clean tsc",
     "tsc": "tsc",
