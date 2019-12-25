@@ -1,5 +1,9 @@
 # cfs3-publish
+
 Deploy and Invalidation Tool for CloudFront + S3 with npm scripts.
+
+![ttyrec](https://user-images.githubusercontent.com/1129887/71441736-11ea8e80-2746-11ea-953e-2c21511037c6.gif)
+
 
 ## Install
 
