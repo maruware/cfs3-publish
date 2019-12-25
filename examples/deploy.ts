@@ -12,7 +12,7 @@ const proc = async () => {
 
   await deployAndInvalidate(
     {
-      pattern: '__tests__/**',
+      pattern: 'tmp/**',
       params: {
         Bucket: bucket
       }
@@ -20,7 +20,7 @@ const proc = async () => {
     {
       distributionId,
       paths: ['/*'],
-      wait: false
+      wait: true
     }
   )
 }
