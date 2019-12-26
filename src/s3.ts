@@ -3,11 +3,11 @@ import { promisify } from 'util'
 import { join, relative } from 'path'
 import Listr, { ListrTask } from 'listr'
 import { S3 } from 'aws-sdk'
-import { createReadStream, lstatSync, statSync } from 'fs'
-import mime from 'mime-types'
+import { createReadStream, lstatSync } from 'fs'
 
 import keyBy from 'lodash.keyby'
 import { calcMd5FromStream } from './utils/md5'
+import { getContentType } from './utils/mime'
 
 const globAsync = promisify(glob)
 
@@ -19,7 +19,7 @@ type FileDef = { name: string; key: string }
 
 const uploadFile = async (s3: S3, file: FileDef, params: DeployArgsParams) => {
   const body = createReadStream(file.name)
-  const contentType = mime.contentType(file.name) || undefined
+  const contentType = getContentType(file.name)
 
   const upload = new S3.ManagedUpload({
     params: {
