@@ -15,7 +15,7 @@ const resolveObjectKey = (cwd: string, base: string, filename: string) => {
   return relative(join(cwd, base), filename)
 }
 
-type FileDef = { name: string; key: string }
+type FileDef = { name: string; key: string; md5: string }
 
 const uploadFile = async (s3: S3, file: FileDef, params: DeployArgsParams) => {
   const body = createReadStream(file.name)
@@ -26,6 +26,9 @@ const uploadFile = async (s3: S3, file: FileDef, params: DeployArgsParams) => {
       Key: file.key,
       Body: body,
       ContentType: contentType,
+      Metadata: {
+        md5: file.md5
+      },
       ...params
     },
     service: s3
@@ -100,14 +103,14 @@ export const deployTask = async ({
   const s3 = new S3({ ...config, computeChecksums: true })
   const bucket = params.Bucket
   const filenames = await globAsync(pattern)
-  const files = filenames
+  const files = await Promise.all(filenames
     .filter(file => lstatSync(file).isFile())
-    .map(file => ({
+    .map(async file => ({
       name: file,
       key: resolveObjectKey(cwd, base, file),
-      md5: calcMd5FromStream(file),
+      md5: await calcMd5FromStream(file),
       size: lstatSync(file).size
-    }))
+    })))
   const tasks: ListrTask<any>[] = files.map(
     (file): ListrTask<any> => {
       return {
@@ -119,7 +122,7 @@ export const deployTask = async ({
               .promise()
             if (r.ETag === `"${file.md5}"`) return true
             // Large file can not be compare ETag. So compare file size.
-            if (r.ContentLength === file.size) return true
+            if (r.Metadata && r.Metadata.md5 === file.md5) return true
             return false
           } catch {
             return false
