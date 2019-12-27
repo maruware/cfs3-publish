@@ -103,14 +103,16 @@ export const deployTask = async ({
   const s3 = new S3({ ...config, computeChecksums: true })
   const bucket = params.Bucket
   const filenames = await globAsync(pattern)
-  const files = await Promise.all(filenames
-    .filter(file => lstatSync(file).isFile())
-    .map(async file => ({
-      name: file,
-      key: resolveObjectKey(cwd, base, file),
-      md5: await calcMd5FromStream(file),
-      size: lstatSync(file).size
-    })))
+  const files = await Promise.all(
+    filenames
+      .filter(file => lstatSync(file).isFile())
+      .map(async file => ({
+        name: file,
+        key: resolveObjectKey(cwd, base, file),
+        md5: await calcMd5FromStream(file),
+        size: lstatSync(file).size
+      }))
+  )
   const tasks: ListrTask<any>[] = files.map(
     (file): ListrTask<any> => {
       return {
