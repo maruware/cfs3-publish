@@ -1,6 +1,7 @@
 import glob from 'glob'
 import { promisify } from 'util'
 import { join, relative } from 'path'
+import slash from 'slash'
 import Listr, { ListrTask } from 'listr'
 import { S3 } from 'aws-sdk'
 import { createReadStream, lstatSync } from 'fs'
@@ -12,7 +13,8 @@ import { getContentType } from './utils/mime'
 const globAsync = promisify(glob)
 
 const resolveObjectKey = (cwd: string, base: string, filename: string) => {
-  return relative(join(cwd, base), filename)
+  const p = relative(join(cwd, base), filename)
+  return slash(p)
 }
 
 type FileDef = { name: string; key: string; md5: string }

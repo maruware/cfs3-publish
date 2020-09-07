@@ -58,6 +58,7 @@
     "glob": "^7.1.6",
     "listr": "^0.14.3",
     "lodash.keyby": "^4.6.0",
-    "mime-types": "^2.1.25"
+    "mime-types": "^2.1.25",
+    "slash": "^3.0.0"
   }
 }
