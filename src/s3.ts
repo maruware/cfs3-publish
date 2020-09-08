@@ -88,7 +88,7 @@ export const deployTask = async ({
   pattern,
   config,
   params,
-  deleteRemoved = true,
+  deleteRemoved = false,
   ...rest
 }: DeployArgs) => {
   let base: string = ''
