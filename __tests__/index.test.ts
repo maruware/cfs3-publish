@@ -39,7 +39,9 @@ test('deployAndInvalidate', async () => {
       pattern: 'tmp/**',
       params: {
         Bucket: bucket
-      }
+      },
+      deleteRemoved: true
+      // deleteProtectionPatterns: ['json/**']
     },
     {
       distributionId,

@@ -70,7 +70,33 @@ deployAndInvalidate(
 )
 ```
 
-* S3
+* Delete old files
+
+```js
+const { deployAndInvalidate } = require('cfs3-publish')
+
+deployAndInvalidate(
+  {
+    pattern: 'dist/**',
+    params: {
+      Bucket: bucket,
+      'Cache-Control': 'max-age=300, no-transform, public'
+    },
+    deleteRemoved: true,
+    deleteProtectionPatterns: [
+      'json/**',
+      'videos/**'
+    ]
+  },
+  {
+    distributionId,
+    paths: ['/*'],
+    wait: true
+  }
+)
+```
+
+* S3 Only
 
 ```js
 const { deploy } = require('cfs3-publish')
@@ -85,7 +111,7 @@ deploy(
 )
 ```
 
-* CloudFront
+* CloudFront Invalidation only
 
 ```js
 const { invalidate } = require('cfs3-publish')

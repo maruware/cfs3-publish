@@ -5,6 +5,7 @@ import slash from 'slash'
 import Listr, { ListrTask } from 'listr'
 import { S3 } from 'aws-sdk'
 import { createReadStream, lstatSync } from 'fs'
+import minimatch from 'minimatch'
 
 import keyBy from 'lodash.keyby'
 import { calcMd5FromStream } from './utils/md5'
@@ -43,6 +44,7 @@ const deleteRemovedObjects = async (
   s3: S3,
   bucket: string,
   files: FileDef[],
+  deleteProtectionPatterns: string[],
   continuationToken?: string
 ): Promise<void> => {
   const keyToFile = keyBy(files, 'key')
@@ -54,6 +56,12 @@ const deleteRemovedObjects = async (
     r.Contents.forEach(content => {
       const key = content.Key
       if (key && !keyToFile[key]) {
+        const protectedKey = deleteProtectionPatterns.some(p =>
+          minimatch(key, p)
+        )
+        if (protectedKey) {
+          return
+        }
         // removed object
         deleteTargets.push({ Key: key })
       }
@@ -70,7 +78,13 @@ const deleteRemovedObjects = async (
   }
 
   if (r.IsTruncated) {
-    return deleteRemovedObjects(s3, bucket, files, r.NextContinuationToken)
+    return deleteRemovedObjects(
+      s3,
+      bucket,
+      files,
+      deleteProtectionPatterns,
+      r.NextContinuationToken
+    )
   }
 }
 
@@ -82,6 +96,7 @@ export type DeployArgs = {
   config?: S3.ClientConfiguration
   params: Omit<S3.PutObjectRequest, 'Key' | 'Body'>
   deleteRemoved?: boolean
+  deleteProtectionPatterns?: string[]
 }
 
 export const deployTask = async ({
@@ -89,6 +104,7 @@ export const deployTask = async ({
   config,
   params,
   deleteRemoved = false,
+  deleteProtectionPatterns = [],
   ...rest
 }: DeployArgs) => {
   let base: string = ''
@@ -120,14 +136,14 @@ export const deployTask = async ({
       return {
         title: `Upload ${file.key}`,
         skip: async () => {
-            const r = await s3
-              .headObject({ Key: file.key, Bucket: bucket })
-              .promise()
+          const r = await s3
+            .headObject({ Key: file.key, Bucket: bucket })
+            .promise()
 
-            if (r.ETag === `"${file.md5}"`) return true
-            // Large file can not be compare ETag. So compare file size.
-            if (r.Metadata && r.Metadata.md5 === file.md5) return true
-            return false
+          if (r.ETag === `"${file.md5}"`) return true
+          // Large file can not be compare ETag. So compare file size.
+          if (r.Metadata && r.Metadata.md5 === file.md5) return true
+          return false
         },
         task: async () => {
           return uploadFile(s3, file, params)
@@ -140,7 +156,7 @@ export const deployTask = async ({
     tasks.push({
       title: 'Delete removed files',
       task: () => {
-        return deleteRemovedObjects(s3, bucket, files)
+        return deleteRemovedObjects(s3, bucket, files, deleteProtectionPatterns)
       }
     })
   }
