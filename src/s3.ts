@@ -136,14 +136,21 @@ export const deployTask = async ({
       return {
         title: `Upload ${file.key}`,
         skip: async () => {
-          const r = await s3
-            .headObject({ Key: file.key, Bucket: bucket })
-            .promise()
+          try {
+            const r = await s3
+              .headObject({ Key: file.key, Bucket: bucket })
+              .promise()
 
-          if (r.ETag === `"${file.md5}"`) return true
-          // Large file can not be compare ETag. So compare file size.
-          if (r.Metadata && r.Metadata.md5 === file.md5) return true
-          return false
+            if (r.ETag === `"${file.md5}"`) return true
+            // Large file can not be compare ETag. So compare file size.
+            if (r.Metadata && r.Metadata.md5 === file.md5) return true
+            return false
+          } catch (e) {
+            if (e.code === 'NotFound') {
+              return false
+            }
+            throw e
+          }
         },
         task: async () => {
           return uploadFile(s3, file, params)
