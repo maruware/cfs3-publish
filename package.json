@@ -31,7 +31,6 @@
   "devDependencies": {
     "@types/glob": "^7.1.1",
     "@types/jest": "^24.0.24",
-    "@types/listr": "^0.14.2",
     "@types/lodash.keyby": "^4.6.6",
     "@types/mime-types": "^2.1.0",
     "@types/node": "^13.1.0",
@@ -53,6 +52,7 @@
     "typescript": "^3.7.4"
   },
   "dependencies": {
+    "@types/listr": "^0.14.2",
     "aws-sdk": "^2.596.0",
     "delay": "^4.3.0",
     "glob": "^7.1.6",
